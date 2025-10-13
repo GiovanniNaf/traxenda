@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, ChangeEvent } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useUser } from '@clerk/nextjs'
 import { Button } from '@/components/ui/button'
@@ -20,9 +20,8 @@ interface Grupo {
   recurrente: boolean
   dia_semana: number | null
   fecha: string | null
+  imagen?: string | null
 }
-
-
 
 export default function GruposPage() {
   const { user, isLoaded } = useUser()
@@ -40,37 +39,52 @@ export default function GruposPage() {
   const [editando, setEditando] = useState<Grupo | null>(null)
   const [cargando, setCargando] = useState(false)
   const [open, setOpen] = useState(false)
+  const [imagen, setImagen] = useState<File | null>(null)
 
-  // Obtener perfil del consejero y sus grupos
+  // Obtener perfil y grupos
   useEffect(() => {
     if (!isLoaded || !user) return
 
     const fetchPerfil = async () => {
-      const { data, error } = await supabase
-        .from('perfiles')
-        .select('id')
-        .eq('clerk_id', user.id)
-        .single()
-
-      if (error || !data) return console.error('Error obteniendo perfil:', error)
-
+      const { data, error } = await supabase.from('perfiles').select('id').eq('clerk_id', user.id).single()
+      if (error || !data) return console.error(error)
       setPerfilId(data.id)
       fetchGrupos(data.id)
     }
 
     const fetchGrupos = async (perfilId: number) => {
-      const { data, error } = await supabase
-        .from('grupos')
-        .select('*')
-        .eq('perfil_id', perfilId)
-        .order('created_at', { ascending: false })
-
-      if (error) return console.error('Error obteniendo grupos:', error)
+      const { data, error } = await supabase.from('grupos').select('*').eq('perfil_id', perfilId).order('created_at', { ascending: false })
+      if (error) return console.error(error)
       setGrupos(data as Grupo[])
     }
 
     fetchPerfil()
   }, [isLoaded, user])
+
+  // Subir imagen al bucket
+const subirImagen = async (): Promise<string | null> => {
+  if (!imagen) return editando?.imagen || null
+
+  const nombreArchivo = `grupos/${Date.now()}_${imagen.name}`
+
+  // Subir el archivo
+  const { error: uploadError } = await supabase.storage
+    .from('img')
+    .upload(nombreArchivo, imagen, { upsert: true })
+
+  if (uploadError) {
+    toast.error('Error al subir imagen ❌')
+    console.error(uploadError)
+    return null
+  }
+
+  // Obtener URL pública
+  const { data } = supabase.storage.from('img').getPublicUrl(nombreArchivo)
+
+  return data.publicUrl
+}
+
+
 
   // Crear o editar grupo
   const handleSubmit = async (e: React.FormEvent) => {
@@ -83,6 +97,8 @@ export default function GruposPage() {
 
     setCargando(true)
 
+    const urlImagen = await subirImagen()
+
     const data = {
       nombre,
       meetlink,
@@ -91,7 +107,8 @@ export default function GruposPage() {
       hora_fin: horaFin || null,
       fecha: recurrente ? null : fecha,
       recurrente,
-      dia_semana: recurrente ? diaSemana : null
+      dia_semana: recurrente ? diaSemana : null,
+      imagen: urlImagen
     }
 
     let error
@@ -105,36 +122,27 @@ export default function GruposPage() {
 
     setCargando(false)
     setOpen(false)
+    limpiarFormulario()
 
     if (error) {
       console.error(error)
       toast.error('Error al guardar el grupo ❌')
     } else {
       toast.success(editando ? 'Grupo actualizado ✅' : 'Grupo creado ✅')
-      limpiarFormulario()
       if (perfilId) {
-        const { data } = await supabase
-          .from('grupos')
-          .select('*')
-          .eq('perfil_id', perfilId)
-          .order('created_at', { ascending: false })
+        const { data } = await supabase.from('grupos').select('*').eq('perfil_id', perfilId).order('created_at', { ascending: false })
         setGrupos(data as Grupo[])
       }
     }
   }
 
-  // Eliminar grupo
   const eliminarGrupo = async (id: number) => {
-    const confirmar = confirm('¿Estás seguro de eliminar este grupo?')
-    if (!confirmar) return
-
+    if (!confirm('¿Estás seguro de eliminar este grupo?')) return
     const { error } = await supabase.from('grupos').delete().eq('id', id)
-
-    if (error) {
-      toast.error('Error al eliminar grupo ❌')
-    } else {
+    if (error) toast.error('Error al eliminar grupo ❌')
+    else {
       setGrupos((prev) => prev.filter((g) => g.id !== id))
-      toast.success('Grupo eliminado correctamente ✅')
+      toast.success('Grupo eliminado ✅')
     }
   }
 
@@ -147,6 +155,7 @@ export default function GruposPage() {
     setRecurrente(false)
     setDiaSemana(0)
     setEditando(null)
+    setImagen(null)
   }
 
   const abrirModalEditar = (grupo: Grupo) => {
@@ -161,51 +170,40 @@ export default function GruposPage() {
     setOpen(true)
   }
 
+  const manejarArchivo = (e: ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) setImagen(e.target.files[0])
+  }
+
   function estaDisponible(grupo: Grupo): boolean {
     const ahora = new Date()
     const horaActual = ahora.getHours() * 60 + ahora.getMinutes()
 
-    // Si el grupo es recurrente
     if (grupo.recurrente) {
-      const diaActual = ahora.getDay() // Domingo = 0, Lunes = 1, ...
+      const diaActual = ahora.getDay()
       if (grupo.dia_semana !== diaActual) return false
-
       if (!grupo.hora_inicio || !grupo.hora_fin) return false
-
-      const [horaInicio, minutoInicio] = grupo.hora_inicio.split(':').map(Number)
-      const [horaFin, minutoFin] = grupo.hora_fin.split(':').map(Number)
-      const inicio = horaInicio * 60 + minutoInicio
-      const fin = horaFin * 60 + minutoFin
-
+      const [hI, mI] = grupo.hora_inicio.split(':').map(Number)
+      const [hF, mF] = grupo.hora_fin.split(':').map(Number)
+      const inicio = hI * 60 + mI
+      const fin = hF * 60 + mF
       return horaActual >= inicio && horaActual <= fin
     }
 
-    // Si el grupo tiene fecha específica
     if (grupo.fecha) {
-      // 🔹 Evita error de zona horaria al construir la fecha manualmente
       const [anio, mes, dia] = grupo.fecha.split('-').map(Number)
       const fechaGrupo = new Date(anio, mes - 1, dia)
-
-      const mismoDia =
-        fechaGrupo.getDate() === ahora.getDate() &&
-        fechaGrupo.getMonth() === ahora.getMonth() &&
-        fechaGrupo.getFullYear() === ahora.getFullYear()
-
+      const mismoDia = fechaGrupo.getDate() === ahora.getDate() && fechaGrupo.getMonth() === ahora.getMonth() && fechaGrupo.getFullYear() === ahora.getFullYear()
       if (!mismoDia) return false
       if (!grupo.hora_inicio || !grupo.hora_fin) return false
-
-      const [horaInicio, minutoInicio] = grupo.hora_inicio.split(':').map(Number)
-      const [horaFin, minutoFin] = grupo.hora_fin.split(':').map(Number)
-      const inicio = horaInicio * 60 + minutoInicio
-      const fin = horaFin * 60 + minutoFin
-
+      const [hI, mI] = grupo.hora_inicio.split(':').map(Number)
+      const [hF, mF] = grupo.hora_fin.split(':').map(Number)
+      const inicio = hI * 60 + mI
+      const fin = hF * 60 + mF
       return horaActual >= inicio && horaActual <= fin
     }
 
     return false
   }
-
-
 
   return (
     <div className="min-h-screen p-6 bg-gray-50">
@@ -257,11 +255,7 @@ export default function GruposPage() {
               {recurrente && (
                 <label className="flex flex-col">
                   Día de la semana
-                  <select
-                    value={diaSemana}
-                    onChange={(e) => setDiaSemana(parseInt(e.target.value))}
-                    className="p-2 border rounded-md"
-                  >
+                  <select value={diaSemana} onChange={(e) => setDiaSemana(parseInt(e.target.value))} className="p-2 border rounded-md">
                     <option value={0}>Domingo</option>
                     <option value={1}>Lunes</option>
                     <option value={2}>Martes</option>
@@ -273,6 +267,11 @@ export default function GruposPage() {
                 </label>
               )}
 
+              <label className="flex flex-col">
+                Portada
+                <Input type="file" accept="image/*" onChange={manejarArchivo} />
+              </label>
+
               <Button type="submit" disabled={cargando} className="bg-indigo-600 text-white">
                 {cargando ? 'Guardando...' : editando ? 'Guardar Cambios' : 'Crear Grupo'}
               </Button>
@@ -281,55 +280,46 @@ export default function GruposPage() {
         </Dialog>
       </div>
 
-      {/* Listado de grupos */}
       {grupos.length === 0 ? (
         <p className="text-center text-gray-600 mt-10">Aún no tienes grupos creados</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {grupos.map((grupo) => (
-            <div
-              key={grupo.id}
-              className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex flex-col justify-between hover:shadow-md transition"
-            >
-              <div>
-                <h2 className="font-semibold text-lg text-gray-800 mb-2">{grupo.nombre}</h2>
-                <p className="text-gray-500 text-sm mb-1">
-                  {grupo.recurrente
-                    ? `Recurrente cada ${['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][grupo.dia_semana || 0]}`
-                    : `Fecha: ${grupo.fecha}`}
-                </p>
-                <p className="text-gray-500 text-sm mb-3">
-                  {grupo.hora_inicio && grupo.hora_fin
-                    ? `Horario: ${grupo.hora_inicio} - ${grupo.hora_fin}`
-                    : 'Horario no definido'}
-                </p>
-              </div>
+            <div key={grupo.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition">
+              {grupo.imagen && <img src={grupo.imagen} alt={grupo.nombre} className="w-full h-40 object-cover" />}
+              <div className="p-6 flex flex-col justify-between">
+                <div>
+                  <h2 className="font-semibold text-lg text-gray-800 mb-2">{grupo.nombre}</h2>
+                  <p className="text-gray-500 text-sm mb-1">
+                    {grupo.recurrente
+                      ? `Recurrente cada ${['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][grupo.dia_semana || 0]}`
+                      : `Fecha: ${grupo.fecha}`}
+                  </p>
+                  <p className="text-gray-500 text-sm mb-3">
+                    {grupo.hora_inicio && grupo.hora_fin
+                      ? `Horario: ${grupo.hora_inicio} - ${grupo.hora_fin}`
+                      : 'Horario no definido'}
+                  </p>
+                </div>
 
-              <div className="flex items-center justify-between gap-2 mt-3">
-                {estaDisponible(grupo) ? (
-                  <a
-                    href={grupo.meetlink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-1 text-center bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700 transition"
-                  >
-                    Unirse
-                  </a>
-                ) : (
-                  <button
-                    disabled
-                    className="flex-1 text-center bg-gray-400 text-gray-200 py-2 rounded-md cursor-not-allowed"
-                  >
-                    Unirse
-                  </button>
-                )}
-                <div className="flex gap-2 ml-2">
-                  <Button variant="outline" size="icon" onClick={() => abrirModalEditar(grupo)}>
-                    <Pencil size={16} />
-                  </Button>
-                  <Button variant="destructive" size="icon" onClick={() => eliminarGrupo(grupo.id)}>
-                    <Trash2 size={16} />
-                  </Button>
+                <div className="flex items-center justify-between gap-2 mt-3">
+                  {estaDisponible(grupo) ? (
+                    <a href={grupo.meetlink} target="_blank" rel="noopener noreferrer" className="flex-1 text-center bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700 transition">
+                      Unirse
+                    </a>
+                  ) : (
+                    <button disabled className="flex-1 text-center bg-gray-400 text-gray-200 py-2 rounded-md cursor-not-allowed">
+                      Unirse
+                    </button>
+                  )}
+                  <div className="flex gap-2 ml-2">
+                    <Button variant="outline" size="icon" onClick={() => abrirModalEditar(grupo)}>
+                      <Pencil size={16} />
+                    </Button>
+                    <Button variant="destructive" size="icon" onClick={() => eliminarGrupo(grupo.id)}>
+                      <Trash2 size={16} />
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>

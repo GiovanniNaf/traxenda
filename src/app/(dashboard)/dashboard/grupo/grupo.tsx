@@ -1,119 +1,123 @@
-import Image from 'next/image'
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import { BookOpen } from 'lucide-react'
-import Link from 'next/link'
-import { Protect } from '@clerk/nextjs'
+'use client'
 
-// Datos de los cursos
-const cursos = [
-  {
-    id: 1,
-    titulo: 'Prevención de Adicciones',
-    descripcion:
-      'Identifica factores de riesgo y aplica estrategias preventivas basadas en evidencia.',
-    duracion: '4 semanas',
-    imagen: '/img/curso1.jpg',
-    enlace: '/cursos/prevencion-adicciones',
-  },
-  {
-    id: 2,
-    titulo: 'Intervención Breve y Motivacional',
-    descripcion:
-      'Aprende técnicas de entrevista motivacional y primeros abordajes clínicos.',
-    duracion: '6 semanas',
-    imagen: '/img/curso2.jpg',
-    enlace: '/cursos/intervencion-breve',
-  },
-  {
-    id: 3,
-    titulo: 'Rehabilitación y Reinserción Social',
-    descripcion:
-      'Diseña planes de tratamiento y acompañamiento para sostener la sobriedad.',
-    duracion: '8 semanas',
-    imagen: '/img/curso1.jpg',
-    enlace: '/cursos/rehabilitacion-reinsercion',
-  },
-]
+import { useState, useEffect } from 'react'
+import { supabase } from '@/lib/supabase'
 
-export default function CursosAdiccionesPage() {
+interface Grupo {
+  id: number
+  nombre: string
+  meetlink: string
+  hora_inicio: string | null
+  hora_fin: string | null
+  recurrente: boolean
+  dia_semana: number | null
+  fecha: string | null
+  imagen?: string | null
+}
+
+export default function PanelUsuarioGrupos() {
+  const [grupos, setGrupos] = useState<Grupo[]>([])
+
+  useEffect(() => {
+    const fetchGrupos = async () => {
+      const { data, error } = await supabase
+        .from('grupos')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (error) return console.error(error)
+      setGrupos(data as Grupo[])
+    }
+
+    fetchGrupos()
+  }, [])
+
+  function estaDisponible(grupo: Grupo): boolean {
+    const ahora = new Date()
+    const horaActual = ahora.getHours() * 60 + ahora.getMinutes()
+
+    if (grupo.recurrente) {
+      const diaActual = ahora.getDay()
+      if (grupo.dia_semana !== diaActual) return false
+      if (!grupo.hora_inicio || !grupo.hora_fin) return false
+      const [hI, mI] = grupo.hora_inicio.split(':').map(Number)
+      const [hF, mF] = grupo.hora_fin.split(':').map(Number)
+      const inicio = hI * 60 + mI
+      const fin = hF * 60 + mF
+      return horaActual >= inicio && horaActual <= fin
+    }
+
+    if (grupo.fecha) {
+      const [anio, mes, dia] = grupo.fecha.split('-').map(Number)
+      const fechaGrupo = new Date(anio, mes - 1, dia)
+      const mismoDia =
+        fechaGrupo.getDate() === ahora.getDate() &&
+        fechaGrupo.getMonth() === ahora.getMonth() &&
+        fechaGrupo.getFullYear() === ahora.getFullYear()
+      if (!mismoDia) return false
+      if (!grupo.hora_inicio || !grupo.hora_fin) return false
+      const [hI, mI] = grupo.hora_inicio.split(':').map(Number)
+      const [hF, mF] = grupo.hora_fin.split(':').map(Number)
+      const inicio = hI * 60 + mI
+      const fin = hF * 60 + mF
+      return horaActual >= inicio && horaActual <= fin
+    }
+
+    return false
+  }
+
   return (
-    <Protect
-      plan="premiun"
-      fallback={
-        <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-gray-100 via-gray-100 to-gray-100 p-6 text-center">
-          <div className="bg-indigo-500 backdrop-blur-md border border-white/20 rounded-2xl shadow-xl p-8 max-w-md">
-            <h2 className="text-2xl font-bold text-white mb-2">
-            Cambia tu supcripcion para disfrutar este beneficio
-            </h2>
-            <p className="text-gray-300 text-sm mb-6">
-              Estás utilizando una versión de prueba.  
-              Para acceder a los cursos completos, selecciona uno de los siguientes planes:
-            </p>
+    <div className="min-h-screen p-6 bg-gray-50">
+      <h1 className="text-3xl font-bold text-gray-800 mb-6">Grupos disponibles</h1>
 
-            {/* Sección de precios */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-              <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-                <h3 className="text-white font-semibold text-lg">Plan Básico</h3>
-                <p className="text-gray-300 text-sm mt-1">Acceso limitado</p>
-                <p className="text-3xl font-bold text-white mt-2">$199 MXN</p>
-              </div>
+      {grupos.length === 0 ? (
+        <p className="text-center text-gray-600 mt-10">No hay grupos disponibles por el momento</p>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {grupos.map((grupo) => (
+            <div
+              key={grupo.id}
+              className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition"
+            >
+              {grupo.imagen && (
+                <img
+                  src={grupo.imagen} // <--- URL pública directamente
+                  alt={grupo.nombre}
+                  className="w-full h-40 object-cover"
+                />
+              )}
+              <div className="p-6 flex flex-col justify-between">
+                <div>
+                  <h2 className="font-semibold text-lg text-gray-800 mb-2">{grupo.nombre}</h2>
+                  <p className="text-gray-500 text-sm mb-1">
+                    {grupo.recurrente
+                      ? `Recurrente cada ${['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][grupo.dia_semana || 0]}`
+                      : `Fecha: ${grupo.fecha}`}
+                  </p>
+                  <p className="text-gray-500 text-sm mb-3">
+                    {grupo.hora_inicio && grupo.hora_fin
+                      ? `Horario: ${grupo.hora_inicio} - ${grupo.hora_fin}`
+                      : 'Horario no definido'}
+                  </p>
+                </div>
 
-              <div className="bg-gradient-to-tr from-indigo-600 to-cyan-500 rounded-xl p-4 shadow-lg">
-                <h3 className="text-white font-semibold text-lg">Plan Premium</h3>
-                <p className="text-white/90 text-sm mt-1">Acceso total a cursos y talleres</p>
-                <p className="text-3xl font-bold text-white mt-2">$399 MXN</p>
+                <a
+                  href={estaDisponible(grupo) ? grupo.meetlink : '#'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`flex-1 text-center py-2 rounded-md transition ${
+                    estaDisponible(grupo)
+                      ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                      : 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                  }`}
+                >
+                  Unirse
+                </a>
               </div>
             </div>
-
-            <Button asChild className="bg-indigo-600 hover:bg-indigo-700 text-white">
-              <Link href="/planes">Ver planes completos</Link>
-            </Button>
-          </div>
-        </div>
-      }
-    >
-      {/* Contenido protegido */}
-      <div className="p-6 space-y-6">
-        <header className="flex items-center gap-2">
-          <BookOpen className="w-6 h-6 text-indigo-700" />
-          <h1 className="text-3xl font-bold text-indigo-700">
-            Cursos y talleres de desarrollo humano
-          </h1>
-        </header>
-        <p className="text-sm text-gray-600 max-w-2xl">
-          Capacitación práctica y basada en evidencia para prevención, intervención y rehabilitación en adicciones.
-        </p>
-
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-          {cursos.map((curso) => (
-            <Card
-              key={curso.id}
-              className="relative overflow-hidden rounded-2xl shadow-md group min-h-[260px] border-0 h-64"
-            >
-              {/* Imagen de fondo */}
-              <Image
-                src={curso.imagen}
-                alt={curso.titulo}
-                fill
-                className="object-cover"
-              />
-              <div className="absolute inset-0 bg-black/40" />
-
-              {/* Contenido */}
-              <div className="relative z-10 flex h-full flex-col justify-between p-5">
-                <h3 className="text-white text-lg font-semibold drop-shadow-md">
-                  {curso.titulo}
-                </h3>
-                <p className="text-white/90 text-sm mt-1">{curso.descripcion}</p>
-                <Button asChild className="bg-indigo-600 hover:bg-indigo-700 mt-2">
-                  <Link href={curso.enlace}>Inscribirse</Link>
-                </Button>
-              </div>
-            </Card>
           ))}
         </div>
-      </div>
-    </Protect>
+      )}
+    </div>
   )
 }

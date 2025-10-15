@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Loader2 } from 'lucide-react' // icono de spinner
+import { Loader2 } from 'lucide-react'
 
-export default function AsignarRol() {
+function AsignarRolInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -49,12 +49,17 @@ export default function AsignarRol() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-tr from-indigo-600 via-indigo-500 to-indigo-400 text-white px-4">
-      {/* Spinner */}
       <Loader2 className="animate-spin w-12 h-12 mb-6" />
-
-      {/* Texto */}
       <h1 className="text-3xl font-bold mb-2">Asignando rol...</h1>
       <p className="text-lg text-indigo-100">Cargando tu panel personalizado, por favor espera</p>
     </div>
+  )
+}
+
+export default function AsignarRol() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center text-white bg-indigo-500">Cargando...</div>}>
+      <AsignarRolInner />
+    </Suspense>
   )
 }

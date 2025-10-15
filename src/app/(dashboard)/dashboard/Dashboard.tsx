@@ -20,8 +20,7 @@ export default function DashboardPaciente() {
     edad: "",
     sexo: "",
     direccion: "",
-    telefono: "",
-    historial_clinico: ""
+    telefono: ""
   });
 
   // 1️⃣ Obtener perfil_id y estado de perfil_completo
@@ -60,18 +59,36 @@ export default function DashboardPaciente() {
   }, [isLoaded, user]);
 
   // 2️⃣ Manejo del formulario
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
+const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  setFormData({
+    ...formData,
+    [e.target.name]: e.target.value
+  });
+};
 
-  // 3️⃣ Guardar datos en Supabase
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!perfilId) return;
+// 3️⃣ Guardar datos en Supabase y asignar psicólogo
+const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  e.preventDefault();
+  if (!perfilId) return;
 
+  try {
+    // Obtener lista de psicólogos
+    const { data: psicologos, error: psicError } = await supabase
+      .from("perfiles")
+      .select("id")
+      .eq("rol", "psicologo");
+
+    if (psicError || !psicologos?.length) {
+      console.error("No hay psicólogos disponibles:", psicError);
+      alert("No hay psicólogos disponibles actualmente.");
+      return;
+    }
+
+    // Seleccionar psicólogo aleatorio
+    const randomIndex = Math.floor(Math.random() * psicologos.length);
+    const psicologoSeleccionado = psicologos[randomIndex];
+
+    // Guardar perfil con psicólogo asignado
     const { error } = await supabase.from("pacientes").upsert([
       {
         perfil_id: perfilId,
@@ -81,16 +98,20 @@ export default function DashboardPaciente() {
         sexo: formData.sexo,
         direccion: formData.direccion,
         telefono: formData.telefono,
-        perfil_completo: true
+        perfil_completo: true,
+        psicologo_id: psicologoSeleccionado.id
       }
     ]);
 
-    if (error) {
-      console.error("Error guardando paciente:", error);
-    } else {
-      setPerfilCompleto(true);
-    }
-  };
+    if (error) throw error;
+
+    alert("Perfil completado y psicólogo asignado correctamente ✅");
+    setPerfilCompleto(true);
+  } catch (error) {
+    console.error("Error guardando paciente:", error);
+  }
+};
+
 
   if (!isLoaded) return <p>Cargando...</p>;
 
@@ -134,7 +155,7 @@ export default function DashboardPaciente() {
                 <Input name="telefono" value={formData.telefono} onChange={handleChange} />
               </div>
               <Button type="submit" className="bg-indigo-600 text-white w-full">
-                Guardar
+                Guardar y asignar psicólogo
               </Button>
             </form>
           </DialogContent>

@@ -177,7 +177,7 @@ export default function DashboardCounselor() {
 
         {/* Seguimiento */}
         <Link
-          href="/dashboard-counselor/seguimiento"
+          href="#"
           className="flex flex-col justify-between p-6 bg-white rounded-xl shadow hover:shadow-lg transition"
         >
           <div className="flex items-center gap-3 text-green-600">
@@ -189,7 +189,7 @@ export default function DashboardCounselor() {
 
         {/* Agregar nuevo grupo */}
         <Link
-          href="/dashboard-counselor/grupos/nuevo"
+          href="/dashboard-counselor/grupos"
           className="flex flex-col justify-between p-6 bg-white rounded-xl shadow hover:shadow-lg transition"
         >
           <div className="flex items-center gap-3 text-purple-600">

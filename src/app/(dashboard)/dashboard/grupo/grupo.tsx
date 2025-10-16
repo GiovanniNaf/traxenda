@@ -105,14 +105,19 @@ export default function PanelUsuarioGrupos() {
                   href={estaDisponible(grupo) ? grupo.meetlink : '#'}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className={`flex-1 text-center py-2 rounded-md transition ${
-                    estaDisponible(grupo)
+                  onClick={(e) => {
+                    if (!estaDisponible(grupo)) {
+                      e.preventDefault(); // Evita que abra la pestaña
+                    }
+                  }}
+                  className={`flex-1 text-center py-2 rounded-md transition ${estaDisponible(grupo)
                       ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                      : 'bg-gray-400 text-gray-200 cursor-not-allowed'
-                  }`}
+                      : 'bg-gray-400 text-gray-200 cursor-not-allowed pointer-events-none'
+                    }`}
                 >
                   Unirse
                 </a>
+
               </div>
             </div>
           ))}

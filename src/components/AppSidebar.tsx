@@ -13,7 +13,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { Calendar, Home, Inbox, Settings, Users2, VectorSquare, FileText, UserCheck } from "lucide-react"
+import { Calendar, Home, Inbox, Settings, Users2, VectorSquare, FileText } from "lucide-react"
 
 type Rol = 'psicologo' | 'usuario' | 'doctor' | 'consejero' | 'admin'
 
@@ -47,11 +47,11 @@ export function AppSidebar({ rol }: AppSidebarProps) {
   const consejeroItems = [
     { title: 'Inicio', url: '/dashboard-counselor', icon: Home },
     { title: 'Grupos', url: '/dashboard-counselor/grupos', icon: VectorSquare },
-    { title: 'Seguimiento', url: '/dashboard-counselor/seguimiento', icon: UserCheck },
+   // { title: 'Seguimiento', url: '/dashboard-counselor/seguimiento', icon: UserCheck },
   ]
 
   const usuarioItems = [
-    { title: 'Consejería', url: '/dashboard/grupo', icon: VectorSquare },
+    { title: 'Salas', url: '/dashboard/grupo', icon: VectorSquare },
     { title: 'Terapia individual', url: '/dashboard/individual', icon: Users2 },
   ]
 
@@ -62,31 +62,27 @@ export function AppSidebar({ rol }: AppSidebarProps) {
     { title: 'Configuración', url: '/dashboard-admin/configuracion', icon: Settings },
   ]
 
-  const configItems = [
-    { title: 'Ajustes', url: '/dashboard/ajustes', icon: Settings },
-  ]
-
   // Construimos el menú final según rol
   let items: typeof commonItems = []
 
   switch (rol) {
     case 'psicologo':
-      items = [...psicologoItems, ...configItems]
+      items = [...psicologoItems]
       break
     case 'doctor':
-      items = [...doctorItems, ...configItems]
+      items = [...doctorItems]
       break
     case 'consejero':
-      items = [...consejeroItems, ...configItems]
+      items = [...consejeroItems]
       break
     case 'usuario':
-      items = [...commonItems, ...usuarioItems, ...configItems]
+      items = [...commonItems, ...usuarioItems]
       break
     case 'admin':
       items = [...adminItems]
       break
     default:
-      items = [...commonItems, ...configItems]
+      items = [...commonItems]
   }
 
   return (

@@ -3,16 +3,36 @@
 import { useUser } from "@clerk/nextjs";
 import { supabase } from "@/lib/supabase";
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Mic, BookOpenCheck, User } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Sparkles,
+  HeartPulse,
+  CalendarDays,
+  Smile,
+  Users,
+  MessageSquare,
+  Brain,
+} from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import Link from "next/link";
 
 export default function DashboardPaciente() {
   const { user, isLoaded } = useUser();
-  const [perfilId, setPerfilId] = useState(null);
+  const [perfilId, setPerfilId] = useState<number | null>(null);
   const [perfilCompleto, setPerfilCompleto] = useState(true);
   const [formData, setFormData] = useState({
     nombre: "",
@@ -20,10 +40,9 @@ export default function DashboardPaciente() {
     edad: "",
     sexo: "",
     direccion: "",
-    telefono: ""
+    telefono: "",
   });
 
-  // 1️⃣ Obtener perfil_id y estado de perfil_completo
   useEffect(() => {
     if (!isLoaded || !user) return;
 
@@ -34,198 +53,177 @@ export default function DashboardPaciente() {
         .eq("clerk_id", user.id)
         .single();
 
-      if (error || !data) {
-        console.error("Error obteniendo perfil:", error);
-        return;
-      }
+      if (error || !data) return;
 
       setPerfilId(data.id);
 
-      // Verificar si el paciente tiene perfil_completo
       const { data: paciente, error: pacienteError } = await supabase
         .from("pacientes")
         .select("perfil_completo")
         .eq("perfil_id", data.id)
         .single();
 
-      if (pacienteError || !paciente) {
-        setPerfilCompleto(false);
-      } else {
-        setPerfilCompleto(paciente.perfil_completo);
-      }
+      if (pacienteError || !paciente) setPerfilCompleto(false);
+      else setPerfilCompleto(paciente.perfil_completo);
     };
 
     fetchPerfil();
   }, [isLoaded, user]);
 
-  // 2️⃣ Manejo del formulario
-const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  setFormData({
-    ...formData,
-    [e.target.name]: e.target.value
-  });
-};
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
 
-// 3️⃣ Guardar datos en Supabase y asignar psicólogo
-const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-  e.preventDefault();
-  if (!perfilId) return;
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!perfilId) return;
 
-  try {
-    // Obtener lista de psicólogos
-    const { data: psicologos, error: psicError } = await supabase
-      .from("perfiles")
-      .select("id")
-      .eq("rol", "psicologo");
+    try {
+      const { data: psicologos, error: psicError } = await supabase
+        .from("perfiles")
+        .select("id")
+        .eq("rol", "psicologo");
 
-    if (psicError || !psicologos?.length) {
-      console.error("No hay psicólogos disponibles:", psicError);
-      alert("No hay psicólogos disponibles actualmente.");
-      return;
-    }
-
-    // Seleccionar psicólogo aleatorio
-    const randomIndex = Math.floor(Math.random() * psicologos.length);
-    const psicologoSeleccionado = psicologos[randomIndex];
-
-    // Guardar perfil con psicólogo asignado
-    const { error } = await supabase.from("pacientes").upsert([
-      {
-        perfil_id: perfilId,
-        nombre: formData.nombre,
-        apellido: formData.apellido,
-        edad: formData.edad ? parseInt(formData.edad) : null,
-        sexo: formData.sexo,
-        direccion: formData.direccion,
-        telefono: formData.telefono,
-        perfil_completo: true,
-        psicologo_id: psicologoSeleccionado.id
+      if (psicError || !psicologos?.length) {
+        alert("No hay psicólogos disponibles actualmente.");
+        return;
       }
-    ]);
 
-    if (error) throw error;
+      const randomIndex = Math.floor(Math.random() * psicologos.length);
+      const psicologoSeleccionado = psicologos[randomIndex];
 
-    alert("Perfil completado y psicólogo asignado correctamente ✅");
-    setPerfilCompleto(true);
-  } catch (error) {
-    console.error("Error guardando paciente:", error);
-  }
-};
+      const { error } = await supabase.from("pacientes").upsert([
+        {
+          perfil_id: perfilId,
+          ...formData,
+          edad: formData.edad ? parseInt(formData.edad) : null,
+          perfil_completo: true,
+          psicologo_id: psicologoSeleccionado.id,
+        },
+      ]);
 
+      if (error) throw error;
+
+      alert("Perfil completado y psicólogo asignado correctamente ✅");
+      setPerfilCompleto(true);
+    } catch (error) {
+      console.error("Error guardando paciente:", error);
+    }
+  };
 
   if (!isLoaded) return <p>Cargando...</p>;
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Botón para completar perfil */}
+    <div className="p-6 space-y-8 bg-gradient-to-b from-indigo-50 to-white min-h-screen">
+      {/* Hero Section */}
+      <div className="text-center py-8 bg-white rounded-2xl shadow-md border border-indigo-100">
+        <div className="flex justify-center mb-4">
+          <HeartPulse className="w-10 h-10 text-indigo-600" />
+        </div>
+        <h1 className="text-3xl font-semibold text-indigo-700">
+          Bienvenido a <span className="font-bold">Traxenda</span>
+        </h1>
+        <p className="text-gray-600 mt-2 max-w-2xl mx-auto">
+          Tu bienestar emocional es importante. Aquí encontrarás herramientas, orientación y
+          acompañamiento para construir una mejor versión de ti mismo.
+        </p>
+      </div>
+
+      {/* Botón de completar perfil */}
       {!perfilCompleto && (
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button className="bg-indigo-600 text-white">
-              Completar perfil
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Completar perfil de paciente</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <Label>Nombre</Label>
-                <Input name="nombre" value={formData.nombre} onChange={handleChange} required />
-              </div>
-              <div>
-                <Label>Apellido</Label>
-                <Input name="apellido" value={formData.apellido} onChange={handleChange} required />
-              </div>
-              <div>
-                <Label>Edad</Label>
-                <Input type="number" name="edad" value={formData.edad} onChange={handleChange} />
-              </div>
-              <div>
-                <Label>Sexo</Label>
-                <Input name="sexo" value={formData.sexo} onChange={handleChange} />
-              </div>
-              <div>
-                <Label>Dirección</Label>
-                <Input name="direccion" value={formData.direccion} onChange={handleChange} />
-              </div>
-              <div>
-                <Label>Teléfono</Label>
-                <Input name="telefono" value={formData.telefono} onChange={handleChange} />
-              </div>
-              <Button type="submit" className="bg-indigo-600 text-white w-full">
-                Guardar y asignar psicólogo
+        <div className="flex justify-center">
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button className="bg-indigo-600 text-white shadow-lg hover:bg-indigo-700">
+                Completar mi perfil
               </Button>
-            </form>
-          </DialogContent>
-        </Dialog>
+            </DialogTrigger>
+            <DialogContent className="max-w-lg">
+              <DialogHeader>
+                <DialogTitle>Completa tu perfil</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {Object.entries(formData).map(([key, value]) => (
+                  <div key={key}>
+                    <Label className="capitalize">{key}</Label>
+                    <Input
+                      name={key}
+                      value={value}
+                      onChange={handleChange}
+                      required={["nombre", "apellido"].includes(key)}
+                    />
+                  </div>
+                ))}
+                <Button type="submit" className="bg-indigo-600 w-full">
+                  Guardar y asignar psicólogo
+                </Button>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
       )}
 
-      {/* Bienvenida */}
-      <h1 className="text-3xl font-bold text-indigo-700 flex items-center gap-2">
-        <Sparkles className="w-6 h-6" /> Bienvenido a Traxenda
-      </h1>
-
-      {/* Podcast destacado */}
-      <Card className="bg-gradient-to-r from-indigo-100 to-indigo-200 shadow-md">
+      {/* Sección inspiracional */}
+      <Card className="bg-indigo-600 text-white shadow-lg">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-indigo-700">
-            <Mic className="w-5 h-5" /> Podcast de la semana
+          <CardTitle className="flex items-center gap-2 text-xl">
+            <Smile className="w-6 h-6" />
+            Tu espacio de bienestar
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          <h2 className="font-semibold">Respira y suelta - Episodio 42</h2>
-          <p className="text-sm text-gray-600">
-            Aprende técnicas simples para reducir el estrés en solo 10 minutos.
+          <p>“Cada paso que das hacia tu paz interior es un triunfo personal.”</p>
+          <p>Explora nuestros recursos y recuerda: cuidar tu mente también es salud.</p>
+        </CardContent>
+      </Card>
+
+      {/* Nueva sección - Grupos / Salas */}
+      <Card className="shadow-md border-t-4 border-indigo-500 bg-white">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-indigo-700">
+            <Users className="w-5 h-5" /> Conéctate con otros en nuestras Salas Grupales
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="text-gray-700 space-y-3">
+          <p>
+            Participa en grupos de apoyo, comparte tus experiencias y crece junto a personas
+            que están viviendo procesos similares al tuyo.
           </p>
-          <Button className="mt-2" variant="outline">
-            Escuchar ahora
-          </Button>
+          <div className="flex flex-wrap gap-3">
+            <div className="flex items-center gap-2 bg-indigo-50 px-3 py-1 rounded-full text-indigo-700 text-sm">
+              <MessageSquare className="w-4 h-4" /> Charlas guiadas
+            </div>
+            <div className="flex items-center gap-2 bg-indigo-50 px-3 py-1 rounded-full text-indigo-700 text-sm">
+              <Brain className="w-4 h-4" /> Crecimiento emocional
+            </div>
+            <div className="flex items-center gap-2 bg-indigo-50 px-3 py-1 rounded-full text-indigo-700 text-sm">
+              <Sparkles className="w-4 h-4" /> Comunidad positiva
+            </div>
+          </div>
+
+          <Link href="/dashboard/grupo">
+            <Button className="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white w-full">
+              Explorar Grupos
+            </Button>
+          </Link>
         </CardContent>
       </Card>
 
-      {/* Psicólogos recomendados */}
-      <Card className="shadow-sm">
+      {/* Agenda futura */}
+      <Card className="bg-gradient-to-r from-indigo-100 to-indigo-50 border border-indigo-200 shadow-sm">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-indigo-700">
-            <User className="w-5 h-5" /> Psicólogos mejor calificados
+            <CalendarDays className="w-5 h-5" /> Próximamente: Agenda tus sesiones
           </CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {["Dra. Ana López", "Dr. Mario Torres", "Lic. Laura Pérez"].map((nombre, i) => (
-            <div key={i} className="p-4 bg-indigo-50 rounded-lg shadow">
-              <h3 className="font-medium">{nombre}</h3>
-              <p className="text-sm text-gray-600">⭐️⭐️⭐️⭐️⭐️</p>
-              <Button variant="link" className="p-0 text-indigo-600 mt-2">
-                Ver perfil
-              </Button>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-
-      {/* Cursos recomendados */}
-      <Card className="shadow-sm">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-indigo-700">
-            <BookOpenCheck className="w-5 h-5" /> Cursos más recomendados
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[
-            { titulo: "Mindfulness para principiantes", autor: "Laura Gómez" },
-            { titulo: "Sanando tu niño interior", autor: "David Herrera" },
-            { titulo: "Técnicas de relajación profunda", autor: "Claudia Ruiz" }
-          ].map((curso, i) => (
-            <div key={i} className="p-4 bg-indigo-50 rounded-lg shadow">
-              <h3 className="font-medium">{curso.titulo}</h3>
-              <p className="text-sm text-gray-600">por {curso.autor}</p>
-              <Button variant="link" className="p-0 text-indigo-600 mt-2">
-                Ver curso
-              </Button>
-            </div>
-          ))}
+        <CardContent>
+          <p className="text-gray-700">
+            Muy pronto podrás reservar tus sesiones individuales y de grupo desde este panel.  
+            Mantente atento a las actualizaciones.
+          </p>
         </CardContent>
       </Card>
     </div>

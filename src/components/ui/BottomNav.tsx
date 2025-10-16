@@ -8,9 +8,8 @@ import {
   Inbox,
   VectorSquare,
   Users2,
-  PhoneCall,
   FileText,
-  UserCheck
+  //UserCheck
 } from "lucide-react"
 import clsx from "clsx"
 
@@ -44,39 +43,37 @@ export function BottomNav({ rol }: AppSidebarProps) {
   const consejeroItems = [
     { title: 'Inicio', url: '/dashboard-counselor', icon: Home },
     { title: 'Grupos', url: '/dashboard-counselor/grupos', icon: VectorSquare },
-    { title: 'Seguimiento', url: '/dashboard-counselor/seguimiento', icon: UserCheck },
+   // { title: 'Seguimiento', url: '/dashboard-counselor/seguimiento', icon: UserCheck },
   ]
 
   const usuarioItems = [
-    { title: 'Cursos', url: '/dashboard/grupo', icon: VectorSquare },
+    { title: 'Salas', url: '/dashboard/grupo', icon: VectorSquare },
     { title: 'Terapia Individual', url: '/dashboard/individual', icon: Users2 },
   ]
 
-  const configItems = [
-    { title: 'Línea EE', url: '/dashboard/lineaee', icon: PhoneCall },
-  ]
+ 
 
   // Construimos el menú final según el rol
   let items: typeof commonItems = []
 
   switch (rol) {
     case 'psicologo':
-      items = [...psicologoItems, ...configItems]
+      items = [...psicologoItems ]
       break
     case 'doctor':
-      items = [...doctorItems, ...configItems]
+      items = [...doctorItems]
       break
     case 'consejero':
-      items = [...consejeroItems, ...configItems]
+      items = [...consejeroItems]
       break
     case 'usuario':
-      items = [...commonItems, ...usuarioItems, ...configItems]
+      items = [...commonItems, ...usuarioItems]
       break
     case 'admin':
-      items = [...commonItems, ...configItems] // Puedes agregar más ítems para admin
+      items = [...commonItems] // Puedes agregar más ítems para admin
       break
     default:
-      items = [...commonItems, ...configItems]
+      items = [...commonItems]
   }
 
   const pathname = usePathname()

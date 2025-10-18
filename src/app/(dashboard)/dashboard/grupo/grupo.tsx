@@ -26,7 +26,7 @@ export default function PanelUsuarioGrupos() {
       const { data, error } = await supabase
         .from('grupos')
         .select('*')
-        .order('created_at', { ascending: false })
+        .order('fecha', { ascending: true })
 
       if (error) return console.error(error)
       setGrupos(data as Grupo[])

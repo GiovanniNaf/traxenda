@@ -73,7 +73,7 @@ export default function GruposPage() {
         .from('grupos')
         .select('*')
         .eq('perfil_id', perfilId)
-        .order('fecha', { ascending: false })
+        .order('fecha', { ascending: true })
       if (error) return console.error(error)
       setGrupos(data as Grupo[])
     }

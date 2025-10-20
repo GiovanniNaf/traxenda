@@ -13,7 +13,7 @@ const urbanist = Urbanist({
 
 export const metadata: Metadata = {
   title: "Consultas en Línea",
-  description: "Sistema de tratamiento y recuperación en línea",
+  description: "Comunidad terapeutica en linea",
 };
 
 export default function RootLayout({

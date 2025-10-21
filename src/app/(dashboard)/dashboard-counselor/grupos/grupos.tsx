@@ -52,7 +52,7 @@ export default function GruposPage() {
   // Modal de contraseña
   const [mostrarPasswordModal, setMostrarPasswordModal] = useState(false)
   const [passwordInput, setPasswordInput] = useState('')
-  const PASSWORD_CORRECTA = 'admin2025' // 🔒 cambia esta contraseña
+  const PASSWORD_CORRECTA = 'admin2025'
 
   const [accionPendiente, setAccionPendiente] = useState<'crear' | 'editar' | 'eliminar' | null>(null)
   const [grupoAEliminar, setGrupoAEliminar] = useState<number | null>(null)
@@ -81,7 +81,6 @@ export default function GruposPage() {
     fetchPerfil()
   }, [isLoaded, user])
 
-  // Subir imagen al bucket
   const subirImagen = async (): Promise<string | null> => {
     if (!imagen) return editando?.imagen || null
     const nombreArchivo = `grupos/${Date.now()}_${imagen.name}`
@@ -97,7 +96,6 @@ export default function GruposPage() {
     return data.publicUrl
   }
 
-  // Crear o editar grupo
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!nombre || !meetlink || (!recurrente && !fecha)) {
@@ -268,7 +266,7 @@ export default function GruposPage() {
 
       {/* Modal de contraseña */}
       <Dialog open={mostrarPasswordModal} onOpenChange={setMostrarPasswordModal}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md w-full">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-lg font-semibold">
               <Lock size={20} /> Verificación requerida
@@ -295,7 +293,7 @@ export default function GruposPage() {
 
       {/* Modal Crear/Editar */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md w-full">
           <DialogHeader>
             <DialogTitle>{editando ? 'Editar Grupo' : 'Crear Nuevo Grupo'}</DialogTitle>
           </DialogHeader>
@@ -310,7 +308,6 @@ export default function GruposPage() {
               <Input value={meetlink} onChange={(e) => setMeetLink(e.target.value)} required />
             </label>
 
-            {/* Campos del instructor */}
             <label className="flex flex-col">
               Nombre del instructor
               <Input value={instructorNombre} onChange={(e) => setInstructorNombre(e.target.value)} required />
@@ -388,65 +385,111 @@ export default function GruposPage() {
         <p className="text-center text-gray-600 mt-10">Aún no tienes grupos creados</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {grupos.map((grupo) => (
-            <div
-              key={grupo.id}
-              className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition"
-            >
-              {grupo.imagen && <img src={grupo.imagen} alt={grupo.nombre} className="w-full h-40 object-cover" />}
-              <div className="p-6 flex flex-col justify-between">
-                <div>
-                  <h2 className="font-semibold text-lg text-gray-800 mb-2">{grupo.nombre}</h2>
-                  <p className="text-gray-500 text-sm mb-1">
-                    {grupo.recurrente
-                      ? `Recurrente cada ${['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][grupo.dia_semana || 0]}`
-                      : `Fecha: ${grupo.fecha}`}
-                  </p>
-                  <p className="text-gray-500 text-sm mb-1">
-                    {grupo.hora_inicio && grupo.hora_fin
-                      ? `Horario: ${grupo.hora_inicio} - ${grupo.hora_fin}`
-                      : 'Horario no definido'}
-                  </p>
-                  {grupo.instructor_nombre && (
-                    <div className="text-sm text-gray-700 mt-2">
-                      <p className="font-medium">{grupo.instructor_nombre}</p>
-                      <p>{grupo.instructor_titulo}</p>
-                      <p className="text-gray-500">{grupo.instructor_experiencia}</p>
+          {grupos
+            .sort((a, b) => {
+              const hoy = new Date()
+              const proxDia = (grupo: Grupo) => {
+                if (grupo.recurrente && grupo.dia_semana !== null) {
+                  const diff = (grupo.dia_semana - hoy.getDay() + 7) % 7
+                  return diff === 0 ? 0 : diff
+                }
+                if (grupo.fecha) {
+                  const [anio, mes, dia] = grupo.fecha.split('-').map(Number)
+                  const fechaGrupo = new Date(anio, mes - 1, dia)
+                  const diff = Math.floor((fechaGrupo.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24))
+                  return diff >= 0 ? diff : 9999
+                }
+                return 9999
+              }
+              return proxDia(a) - proxDia(b)
+            })
+            .map((grupo) => {
+              const hoy = (() => {
+                const fechaActual = new Date()
+                if (grupo.recurrente && grupo.dia_semana === fechaActual.getDay()) return true
+                if (grupo.fecha) {
+                  const [anio, mes, dia] = grupo.fecha.split('-').map(Number)
+                  const fechaGrupo = new Date(anio, mes - 1, dia)
+                  return (
+                    fechaGrupo.getDate() === fechaActual.getDate() &&
+                    fechaGrupo.getMonth() === fechaActual.getMonth() &&
+                    fechaGrupo.getFullYear() === fechaActual.getFullYear()
+                  )
+                }
+                return false
+              })()
+
+              return (
+                <div
+                  key={grupo.id}
+                  className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition relative"
+                >
+                  {grupo.imagen && <img src={grupo.imagen} alt={grupo.nombre} className="w-full h-40 object-cover" />}
+
+                  {hoy && (
+                    <span className="absolute top-2 right-2 bg-yellow-400 text-black px-3 py-1 text-xs font-bold rounded-full shadow-md">
+                      Hoy
+                    </span>
+                  )}
+
+                  <div
+                    className={`p-6 flex flex-col justify-between transition ${
+                      hoy ? 'bg-indigo-600 text-white' : 'bg-white text-gray-800'
+                    }`}
+                  >
+                    <div>
+                      <h2 className="font-semibold text-lg mb-2">{grupo.nombre}</h2>
+                      <p className="text-sm mb-1">
+                        {grupo.recurrente
+                          ? `Recurrente cada ${['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][grupo.dia_semana || 0]}`
+                          : `Fecha: ${grupo.fecha}`}
+                      </p>
+                      <p className="text-sm mb-1">
+                        {grupo.hora_inicio && grupo.hora_fin
+                          ? `Horario: ${grupo.hora_inicio} - ${grupo.hora_fin}`
+                          : 'Horario no definido'}
+                      </p>
+                      {grupo.instructor_nombre && (
+                        <div className="text-sm mt-2">
+                          <p className="font-medium">{grupo.instructor_nombre}</p>
+                          <p>{grupo.instructor_titulo}</p>
+                          <p className={hoy ? 'text-indigo-100' : 'text-gray-500'}>{grupo.instructor_experiencia}</p>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
 
-                <div className="flex items-center justify-between gap-2 mt-3">
-                  {estaDisponible(grupo) ? (
-                    <a
-                      href={grupo.meetlink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex-1 text-center bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700 transition"
-                    >
-                      Unirse
-                    </a>
-                  ) : (
-                    <button
-                      disabled
-                      className="flex-1 text-center bg-gray-400 text-gray-200 py-2 rounded-md cursor-not-allowed"
-                    >
-                      Unirse
-                    </button>
-                  )}
+                    <div className="flex items-center justify-between gap-2 mt-3">
+                      {estaDisponible(grupo) ? (
+                        <a
+                          href={grupo.meetlink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex-1 text-center bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700 transition"
+                        >
+                          Unirse
+                        </a>
+                      ) : (
+                        <button
+                          disabled
+                          className="flex-1 text-center bg-gray-400 text-gray-200 py-2 rounded-md cursor-not-allowed"
+                        >
+                          Unirse
+                        </button>
+                      )}
 
-                  <div className="flex gap-2 ml-2">
-                    <Button variant="outline" size="icon" onClick={() => abrirModalEditar(grupo)}>
-                      <Pencil size={16} />
-                    </Button>
-                    <Button variant="destructive" size="icon" onClick={() => eliminarGrupo(grupo.id)}>
-                      <Trash2 size={16} />
-                    </Button>
+                      <div className="flex gap-2 ml-2">
+                        <Button variant="outline" size="icon" onClick={() => abrirModalEditar(grupo)}>
+                          <Pencil size={16} />
+                        </Button>
+                        <Button variant="destructive" size="icon" onClick={() => eliminarGrupo(grupo.id)}>
+                          <Trash2 size={16} />
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
-          ))}
+              )
+            })}
         </div>
       )}
     </div>

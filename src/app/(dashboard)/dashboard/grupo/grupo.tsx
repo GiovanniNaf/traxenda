@@ -158,7 +158,7 @@ export default function PanelUsuarioGrupos() {
 
                     {grupo.instructor_nombre && (
                       <p className="text-sm mb-1">
-                        <span className="font-bold">Instructor: </span>{grupo.instructor_nombre}
+                        <span className="font-bold">Facilitador: </span>{grupo.instructor_nombre}
                       </p>
                     )}
                     {grupo.instructor_titulo && (

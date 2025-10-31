@@ -292,93 +292,147 @@ export default function GruposPage() {
       </Dialog>
 
       {/* Modal Crear/Editar */}
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-md w-full">
-          <DialogHeader>
-            <DialogTitle>{editando ? 'Editar Grupo' : 'Crear Nuevo Grupo'}</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4 mt-4">
-            <label className="flex flex-col">
-              Nombre del grupo
-              <Input value={nombre} onChange={(e) => setNombre(e.target.value)} required />
-            </label>
+    <Dialog open={open} onOpenChange={setOpen}>
+  <DialogContent className="w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto p-4 rounded-lg">
+    <DialogHeader>
+      <DialogTitle className="text-lg sm:text-xl text-center">
+        {editando ? 'Editar Grupo' : 'Crear Nuevo Grupo'}
+      </DialogTitle>
+    </DialogHeader>
 
-            <label className="flex flex-col">
-              Link de Meet
-              <Input value={meetlink} onChange={(e) => setMeetLink(e.target.value)} required />
-            </label>
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4 mt-4">
+      <label className="flex flex-col text-sm sm:text-base">
+        Nombre del grupo
+        <Input
+          value={nombre}
+          onChange={(e) => setNombre(e.target.value)}
+          required
+          className="mt-1 text-sm sm:text-base"
+        />
+      </label>
 
-            <label className="flex flex-col">
-              Nombre del instructor
-              <Input value={instructorNombre} onChange={(e) => setInstructorNombre(e.target.value)} required />
-            </label>
+      <label className="flex flex-col text-sm sm:text-base">
+        Link de Meet
+        <Input
+          value={meetlink}
+          onChange={(e) => setMeetLink(e.target.value)}
+          required
+          className="mt-1 text-sm sm:text-base"
+        />
+      </label>
 
-            <label className="flex flex-col">
-              Título del instructor
-              <Input value={instructorTitulo} onChange={(e) => setInstructorTitulo(e.target.value)} required />
-            </label>
+      <label className="flex flex-col text-sm sm:text-base">
+        Nombre del instructor
+        <Input
+          value={instructorNombre}
+          onChange={(e) => setInstructorNombre(e.target.value)}
+          required
+          className="mt-1 text-sm sm:text-base"
+        />
+      </label>
 
-            <label className="flex flex-col">
-              Experiencia del instructor
-              <Input
-                value={instructorExperiencia}
-                onChange={(e) => setInstructorExperiencia(e.target.value)}
-                required
-              />
-            </label>
+      <label className="flex flex-col text-sm sm:text-base">
+        Título del instructor
+        <Input
+          value={instructorTitulo}
+          onChange={(e) => setInstructorTitulo(e.target.value)}
+          required
+          className="mt-1 text-sm sm:text-base"
+        />
+      </label>
 
-            <label className="flex items-center gap-2">
-              <input type="checkbox" checked={recurrente} onChange={(e) => setRecurrente(e.target.checked)} />
-              Grupo recurrente
-            </label>
+      <label className="flex flex-col text-sm sm:text-base">
+        Experiencia del instructor
+        <Input
+          value={instructorExperiencia}
+          onChange={(e) => setInstructorExperiencia(e.target.value)}
+          required
+          className="mt-1 text-sm sm:text-base"
+        />
+      </label>
 
-            {!recurrente && (
-              <label className="flex flex-col">
-                Fecha
-                <Input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} />
-              </label>
-            )}
+      <label className="flex items-center gap-2 text-sm sm:text-base">
+        <input
+          type="checkbox"
+          checked={recurrente}
+          onChange={(e) => setRecurrente(e.target.checked)}
+          className="w-4 h-4"
+        />
+        Grupo recurrente
+      </label>
 
-            <label className="flex flex-col">
-              Hora inicio
-              <Input type="time" value={horaInicio} onChange={(e) => setHoraInicio(e.target.value)} />
-            </label>
+      {!recurrente && (
+        <label className="flex flex-col text-sm sm:text-base">
+          Fecha
+          <Input
+            type="date"
+            value={fecha}
+            onChange={(e) => setFecha(e.target.value)}
+            className="mt-1 text-sm sm:text-base"
+          />
+        </label>
+      )}
 
-            <label className="flex flex-col">
-              Hora fin
-              <Input type="time" value={horaFin} onChange={(e) => setHoraFin(e.target.value)} />
-            </label>
+      <label className="flex flex-col text-sm sm:text-base">
+        Hora inicio
+        <Input
+          type="time"
+          value={horaInicio}
+          onChange={(e) => setHoraInicio(e.target.value)}
+          className="mt-1 text-sm sm:text-base"
+        />
+      </label>
 
-            {recurrente && (
-              <label className="flex flex-col">
-                Día de la semana
-                <select
-                  value={diaSemana}
-                  onChange={(e) => setDiaSemana(parseInt(e.target.value))}
-                  className="p-2 border rounded-md"
-                >
-                  <option value={0}>Domingo</option>
-                  <option value={1}>Lunes</option>
-                  <option value={2}>Martes</option>
-                  <option value={3}>Miércoles</option>
-                  <option value={4}>Jueves</option>
-                  <option value={5}>Viernes</option>
-                  <option value={6}>Sábado</option>
-                </select>
-              </label>
-            )}
+      <label className="flex flex-col text-sm sm:text-base">
+        Hora fin
+        <Input
+          type="time"
+          value={horaFin}
+          onChange={(e) => setHoraFin(e.target.value)}
+          className="mt-1 text-sm sm:text-base"
+        />
+      </label>
 
-            <label className="flex flex-col">
-              Portada
-              <Input type="file" accept="image/*" onChange={manejarArchivo} />
-            </label>
+      {recurrente && (
+        <label className="flex flex-col text-sm sm:text-base">
+          Día de la semana
+          <select
+            value={diaSemana}
+            onChange={(e) => setDiaSemana(parseInt(e.target.value))}
+            className="p-2 border rounded-md mt-1 text-sm sm:text-base"
+          >
+            <option value={0}>Domingo</option>
+            <option value={1}>Lunes</option>
+            <option value={2}>Martes</option>
+            <option value={3}>Miércoles</option>
+            <option value={4}>Jueves</option>
+            <option value={5}>Viernes</option>
+            <option value={6}>Sábado</option>
+          </select>
+        </label>
+      )}
 
-            <Button type="submit" disabled={cargando} className="bg-indigo-600 text-white">
-              {cargando ? 'Guardando...' : editando ? 'Guardar Cambios' : 'Crear Grupo'}
-            </Button>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <label className="flex flex-col text-sm sm:text-base">
+        Portada
+        <Input
+          type="file"
+          accept="image/*"
+          onChange={manejarArchivo}
+          className="mt-1 text-sm sm:text-base"
+        />
+      </label>
+
+      <Button
+        type="submit"
+        disabled={cargando}
+        className="bg-indigo-600 text-white mt-2 py-2 sm:py-3 text-sm sm:text-base"
+      >
+        {cargando ? 'Guardando...' : editando ? 'Guardar Cambios' : 'Crear Grupo'}
+      </Button>
+    </form>
+  </DialogContent>
+</Dialog>
+
 
       {/* Lista de grupos */}
       {grupos.length === 0 ? (

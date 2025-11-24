@@ -14,7 +14,7 @@ const supabase = createClient(
 
 // 🔹 IDs de los precios en Stripe
 const PRICE_IDS: Record<string, string> = {
-  'Iniciando el camino': 'price_1SX3Fh03AkkK3Ans4LeSK7cv', // Reemplaza con tu ID real
+  'Iniciando el camino': 'price_1SX6YN03AkkK3AnsC2UQ7vJY', // Reemplaza con tu ID real
   'Recuperación plena': 'price_1SX3C903AkkK3Ans6s8qKdCL', // Reemplaza con tu ID real
 };
 

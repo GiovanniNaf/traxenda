@@ -21,6 +21,9 @@ export default function DashboardPaciente() {
   const { user, isLoaded } = useUser();
   const [perfilId, setPerfilId] = useState<number | null>(null);
   const [perfilCompleto, setPerfilCompleto] = useState(true);
+  const [pacienteNombre, setPacienteNombre] = useState<string | null>(null);
+  const [perfilGuardado, setPerfilGuardado] = useState(false);
+
 
 
   const [formData, setFormData] = useState({
@@ -75,14 +78,21 @@ export default function DashboardPaciente() {
 
       setPerfilId(data.id);
 
-      const { data: paciente, error: pacienteError } = await supabase
+      const { data: paciente } = await supabase
         .from("pacientes")
-        .select("perfil_completo")
+        .select("perfil_completo, nombre, apellido")
         .eq("perfil_id", data.id)
-        .single();
+        .maybeSingle();
 
-      if (pacienteError || !paciente) setPerfilCompleto(false);
-      else setPerfilCompleto(paciente.perfil_completo);
+      // Si no hay paciente, marcamos perfil como incompleto
+      if (!paciente) {
+        setPerfilCompleto(false);
+        return;
+      }
+
+      // Si existe, actualizamos estados
+      setPerfilCompleto(paciente.perfil_completo ?? false);
+      setPacienteNombre(`${paciente.nombre}`);
     };
 
     fetchPerfil();
@@ -102,7 +112,7 @@ export default function DashboardPaciente() {
 
       if (error) return console.error(error);
       if (!pagos || pagos.length === 0) {
-       
+
         return;
       }
 
@@ -117,20 +127,21 @@ export default function DashboardPaciente() {
           .delete()
           .eq("id", pagos[0].id);
         if (errEliminar) console.error(errEliminar);
-     
-      } 
+
+      }
     };
 
     limpiarPagoAntiguo();
   }, [perfilId]);
 
   // Manejo de cambios en inputs
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
+
 
   // Guardar datos de paciente
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -149,7 +160,7 @@ export default function DashboardPaciente() {
 
       if (error) throw error;
 
-      alert("Perfil completado correctamente ✅");
+      setPerfilGuardado(true); // 
       setPerfilCompleto(true);
     } catch (err) {
       console.error("Error guardando paciente:", err);
@@ -182,10 +193,11 @@ export default function DashboardPaciente() {
 
         {/* NOMBRE O MENSAJE */}
         <div className="mt-8 px-5 md:px-0">
-          <div className="w-full bg-gray-100 text-center py-3 rounded-full font-semibold text-lg md:text-xl shadow-sm">
-            {!perfilCompleto
+          <div className="w-full bg-indigo-600 text-white text-center py-3 rounded-full font-semibold text-lg md:text-xl shadow-sm">
+            {!perfilCompleto || !pacienteNombre
               ? "Bienvenido a Traxenda"
-              : `Hola ${user?.firstName} ${user?.lastName}`}
+              : `Hola ${pacienteNombre}`
+            }
           </div>
         </div>
 
@@ -199,32 +211,83 @@ export default function DashboardPaciente() {
                 </Button>
               </DialogTrigger>
 
-              <DialogContent className="max-w-lg">
+              <DialogContent className="max-w-lg rounded-3xl p-6">
                 <DialogHeader>
-                  <DialogTitle>Completa tu Perfil</DialogTitle>
+                  <DialogTitle className="text-2xl font-bold text-purple-700">
+                    Completa tu Perfil
+                  </DialogTitle>
+                  <p className="text-gray-500 text-sm mt-1">
+                    Esto nos ayudará a personalizar tu experiencia en Traxenda.
+                  </p>
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-                  {Object.entries(formData).map(([key, value]) => (
-                    <div key={key}>
-                      <Label className="capitalize">{key}</Label>
-                      <Input
-                        name={key}
-                        value={value}
-                        onChange={handleChange}
-                        required={["nombre", "apellido"].includes(key)}
-                      />
-                    </div>
-                  ))}
 
-                  <Button type="submit" className="w-full bg-purple-600">
+                  {/* Campos dinámicos excepto sexo */}
+                  {Object.entries(formData)
+                    .filter(([key]) => key !== "sexo")
+                    .map(([key, value]) => (
+                      <div key={key}>
+                        <Label className="capitalize text-sm font-medium">{key}</Label>
+                        <Input
+                          name={key}
+                          value={value}
+                          onChange={handleChange}
+                          required={["nombre", "apellido"].includes(key)}
+                          className="mt-1"
+                        />
+                      </div>
+                    ))}
+
+                  {/* CAMPO SEXO */}
+                  <div>
+                    <Label className="text-sm font-medium">Sexo</Label>
+                    <select
+                      name="sexo"
+                      value={formData.sexo}
+                      onChange={handleChange}
+                      className="mt-1 w-full rounded-xl border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-purple-500"
+                      required
+                    >
+                      <option value="">Selecciona una opción</option>
+                      <option value="masculino">Masculino</option>
+                      <option value="femenino">Femenino</option>
+                     
+                    </select>
+                  </div>
+
+                  {/* BOTÓN GUARDAR */}
+                  <Button
+                    type="submit"
+                    className="w-full bg-purple-600 hover:bg-purple-700 py-3 rounded-xl text-lg font-semibold shadow-md"
+                  >
                     Guardar Perfil
                   </Button>
+                  {perfilGuardado && (
+                    <div className="mt-6 px-5 md:px-0">
+                      <div className="bg-purple-600 text-white rounded-2xl shadow-lg p-6 text-center animate-in fade-in zoom-in duration-300">
+                        <h3 className="text-2xl font-bold">¡Perfil actualizado! 🎉</h3>
+
+                        <p className="mt-2 text-purple-100 text-sm">
+                          Gracias por completar tu información.
+                          Ahora tu experiencia será mucho más personalizada.
+                        </p>
+
+                        <div className="mt-4">
+                          <span className="inline-block bg-white text-purple-700 font-semibold px-4 py-2 rounded-xl shadow">
+                            Bienvenido a Traxenda 🚀
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                 </form>
               </DialogContent>
             </Dialog>
           </div>
         )}
+
 
         {/* SALA DEL DÍA SOLO SI TIENE PAGO VIGENTE */}
         {salaDelDia && (

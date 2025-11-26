@@ -50,7 +50,7 @@ function AsignarRolInner() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-tr from-indigo-600 via-indigo-500 to-indigo-400 text-white px-4">
       <Loader2 className="animate-spin w-12 h-12 mb-6" />
-      <h1 className="text-3xl font-bold mb-2">Asignando rol...</h1>
+      <h1 className="text-3xl font-bold mb-2">Prepando todo para ti estamos</h1>
       <p className="text-lg text-indigo-100">Cargando tu panel personalizado, por favor espera</p>
     </div>
   )

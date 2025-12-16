@@ -122,6 +122,13 @@ export default function SuscripcionPage({ perfil_id }: { perfil_id: number }) {
     return fecha.toLocaleTimeString('es-MX', { hour: 'numeric', minute: '2-digit' });
   };
 
+    const formatearFecha = (fecha?: string | null) => {
+    if (!fecha) return ''
+    const [anio, mes, dia] = fecha.split('-').map(Number)
+    const fechaGrupo = new Date(anio, mes - 1, dia)
+    return fechaGrupo.toLocaleDateString('es-MX', { day: 'numeric', month: 'long' })
+  }
+
   return (
     <div className="flex flex-col gap-8 items-center p-6">
       <h1 className="text-3xl font-semibold text-indigo-600 mb-4">
@@ -175,8 +182,8 @@ export default function SuscripcionPage({ perfil_id }: { perfil_id: number }) {
 
                     <p className="text-sm text-gray-500 mb-2">
                       {grupo.recurrente
-                        ? `Todos los ${['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][grupo.dia_semana || 0]}`
-                        : grupo.fecha}
+                        ? `Todos los ${['Domingos', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'][grupo.dia_semana || 0]}`
+                        : `Fecha: ${formatearFecha(grupo.fecha)}`}
                     </p>
 
                     <div className="flex items-center justify-between">

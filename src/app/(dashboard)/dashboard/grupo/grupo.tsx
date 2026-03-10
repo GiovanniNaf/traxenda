@@ -16,6 +16,7 @@ interface Grupo {
   instructor_nombre?: string | null
   instructor_titulo?: string | null
   instructor_experiencia?: string | null
+
 }
 
 export default function PanelUsuarioGrupos() {
@@ -39,6 +40,23 @@ export default function PanelUsuarioGrupos() {
     fetchGrupos()
   }, [])
 
+  const obtenerHoraMexico = () => {
+    const ahora = new Date()
+
+    const partes = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/Mexico_City',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+      weekday: 'short'
+    }).formatToParts(ahora)
+
+    const hora = Number(partes.find(p => p.type === 'hour')?.value)
+    const minuto = Number(partes.find(p => p.type === 'minute')?.value)
+
+    return hora * 60 + minuto
+  }
+
   const obtenerProximaFecha = (grupo: Grupo): Date => {
     const hoy = new Date()
     if (grupo.recurrente && grupo.dia_semana !== null) {
@@ -55,8 +73,10 @@ export default function PanelUsuarioGrupos() {
   }
 
   const estaDisponible = (grupo: Grupo): boolean => {
-    const ahora = new Date()
-    const horaActual = ahora.getHours() * 60 + ahora.getMinutes()
+    const horaActual = obtenerHoraMexico()
+    const ahora = new Date(
+      new Date().toLocaleString('en-US', { timeZone: 'America/Mexico_City' })
+    )
 
     if (grupo.recurrente) {
       const diaActual = ahora.getDay()
@@ -110,13 +130,19 @@ export default function PanelUsuarioGrupos() {
   }
 
   const formatearHora = (hora?: string | null) => {
-    if (!hora) return ''
-    const [h, m] = hora.split(':').map(Number)
-    const fecha = new Date()
-    fecha.setHours(h)
-    fecha.setMinutes(m)
-    return fecha.toLocaleTimeString('es-MX', { hour: 'numeric', minute: '2-digit' })
-  }
+  if (!hora) return ''
+
+  const [h, m] = hora.split(':').map(Number)
+
+  const fecha = new Date()
+  fecha.setHours(h)
+  fecha.setMinutes(m)
+
+  return fecha.toLocaleTimeString([], {
+    hour: 'numeric',
+    minute: '2-digit'
+  })
+}
 
   return (
     <div className="min-h-screen p-6 bg-gray-50">
@@ -142,9 +168,8 @@ export default function PanelUsuarioGrupos() {
 
                 {/* Contenedor de información: solo esta parte se pinta si es hoy */}
                 <div
-                  className={`p-6 flex flex-col justify-between transition ${
-                    hoy ? 'bg-indigo-600 text-white' : 'bg-white text-gray-800'
-                  }`}
+                  className={`p-6 flex flex-col justify-between transition ${hoy ? 'bg-indigo-600 text-white' : 'bg-white text-gray-800'
+                    }`}
                 >
                   <div>
                     <div className="flex items-center justify-between mb-2">
@@ -182,6 +207,7 @@ export default function PanelUsuarioGrupos() {
                         ? `Horario: ${formatearHora(grupo.hora_inicio)} a ${formatearHora(grupo.hora_fin)} (Horario de México)`
                         : 'Horario no definido'}
                     </p>
+
                   </div>
                 </div>
 
@@ -194,11 +220,10 @@ export default function PanelUsuarioGrupos() {
                     onClick={(e) => {
                       if (!estaDisponible(grupo)) e.preventDefault()
                     }}
-                    className={`block text-center py-2 rounded-md transition ${
-                      estaDisponible(grupo)
+                    className={`block text-center py-2 rounded-md transition ${estaDisponible(grupo)
                         ? 'bg-indigo-600 text-white hover:bg-indigo-700'
                         : 'bg-gray-400 text-gray-200 cursor-not-allowed pointer-events-none'
-                    }`}
+                      }`}
                   >
                     Unirse
                   </a>

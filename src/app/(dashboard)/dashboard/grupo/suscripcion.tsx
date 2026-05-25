@@ -25,6 +25,11 @@ export default function SuscripcionPage({ perfil_id }: { perfil_id: number }) {
   const [loading, setLoading] = useState<string | null>(null);
   const [gruposGratuitos, setGruposGratuitos] = useState<Grupo[]>([]);
 
+  const PASSWORD_GRATIS = "CERTRAX26";
+
+  const [passwordInput, setPasswordInput] = useState<{ [key:number]: string }>({});
+  const [accesoPermitido, setAccesoPermitido] = useState<{ [key:number]: boolean }>({});
+
   const paquetes = [
     {
       nombre: "Iniciando el camino",
@@ -76,6 +81,17 @@ export default function SuscripcionPage({ perfil_id }: { perfil_id: number }) {
     }
 
     setLoading(null);
+  };
+
+  const validarContrasena = (grupoId: number) => {
+    if (passwordInput[grupoId] === PASSWORD_GRATIS) {
+      setAccesoPermitido(prev => ({
+        ...prev,
+        [grupoId]: true
+      }));
+    } else {
+      alert("Contraseña incorrecta");
+    }
   };
 
   // Función para verificar si un grupo está disponible ahora
@@ -192,21 +208,46 @@ export default function SuscripcionPage({ perfil_id }: { perfil_id: number }) {
                           ? `${formatearHora(grupo.hora_inicio)} - ${formatearHora(grupo.hora_fin)}`
                           : 'Horario por definir'}
                       </p>
-                      <a
-                        href={estaDisponible(grupo) ? grupo.meetlink : '#'}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => {
-                          if (!estaDisponible(grupo)) e.preventDefault();
-                        }}
-                        className={`text-sm px-3 py-1 rounded-full transition ${
-                          estaDisponible(grupo)
-                            ? 'bg-emerald-500 text-white hover:bg-emerald-600'
-                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        }`}
-                      >
-                        {estaDisponible(grupo) ? 'Unirse' : 'No disponible'}
-                      </a>
+
+                      {!accesoPermitido[grupo.id] ? (
+                        <div className="flex flex-col gap-2">
+                          <input
+                            type="password"
+                            placeholder="Contraseña"
+                            value={passwordInput[grupo.id] || ''}
+                            onChange={(e) =>
+                              setPasswordInput(prev => ({
+                                ...prev,
+                                [grupo.id]: e.target.value
+                              }))
+                            }
+                            className="border rounded px-2 py-1 text-sm"
+                          />
+
+                          <button
+                            onClick={() => validarContrasena(grupo.id)}
+                            className="text-sm px-3 py-1 rounded-full transition bg-emerald-500 text-white hover:bg-emerald-600"
+                          >
+                            Acceder
+                          </button>
+                        </div>
+                      ) : (
+                        <a
+                          href={estaDisponible(grupo) ? grupo.meetlink : '#'}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => {
+                            if (!estaDisponible(grupo)) e.preventDefault();
+                          }}
+                          className={`text-sm px-3 py-1 rounded-full transition ${
+                            estaDisponible(grupo)
+                              ? 'bg-emerald-500 text-white hover:bg-emerald-600'
+                              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          }`}
+                        >
+                          {estaDisponible(grupo) ? 'Unirse' : 'No disponible'}
+                        </a>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -266,7 +307,6 @@ function LiquidGlassCard({
       overflow-hidden
     "
     >
-      {/* Reflejo animado */}
       <div
         className="
         absolute inset-0 bg-gradient-to-br from-white/70 to-purple-200/30
@@ -276,7 +316,6 @@ function LiquidGlassCard({
       "
       />
 
-      {/* Glow morado suave */}
       <div
         className="
         absolute -top-16 right-10 w-40 h-40
@@ -285,7 +324,6 @@ function LiquidGlassCard({
       "
       />
 
-      {/* Contenido */}
       <div className="relative bg-white/60 rounded-3xl p-8 backdrop-blur-2xl border border-white/40">
         <h3 className="text-xl font-bold text-indigo-700">{title}</h3>
         <p className="text-gray-700 mt-1">{description}</p>
